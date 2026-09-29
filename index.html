@@ -1,0 +1,448 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AAKASH EARTH GANPATI YUWA MANDAL - VARGARI RECEIPT SYSTEM</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- FontAwesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+  <!-- Google Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;800;900&family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+
+  <!-- Firebase SDKs (v8) -->
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+
+  <style>
+    body {
+      font-family: 'Poppins', sans-serif;
+      background: radial-gradient(circle at top, #2b0314 0%, #0d0107 100%);
+      color: #fce8cd;
+      min-height: 100vh;
+    }
+    .font-cinzel { font-family: 'Cinzel', serif; }
+    .gold-gradient {
+      background: linear-gradient(135deg, #bf953f 0%, #fcf6ba 25%, #b38728 50%, #fbf5b7 75%, #aa771c 100%);
+    }
+    .gold-text {
+      background: linear-gradient(135deg, #bf953f 0%, #fcf6ba 30%, #b38728 70%, #aa771c 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .glass-card {
+      background: rgba(45, 10, 24, 0.65);
+      backdrop-filter: blur(16px);
+      border: 1px solid rgba(212, 175, 55, 0.3);
+      box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.5);
+    }
+  </style>
+</head>
+<body class="p-2 md:p-6">
+
+  <!-- TOP HEADER (TITLE WITHOUT ICON) -->
+  <header class="max-w-6xl mx-auto mb-6 glass-card rounded-2xl p-4 flex flex-col md:flex-row items-center justify-between gap-4 border-b-2 border-amber-500">
+    <div>
+      <h1 class="text-xl md:text-2xl font-bold font-cinzel gold-text tracking-wider">
+        AAKASH EARTH GANPATI YUWA MANDAL
+      </h1>
+      <p class="text-xs text-amber-200/80 font-medium tracking-widest uppercase">
+        Vargari Receipt & Accounts Portal (Live Firebase DB)
+      </p>
+    </div>
+
+    <!-- USER & NAV BUTTONS -->
+    <div class="flex flex-wrap items-center gap-3" id="navControls">
+      <div id="userInfo" class="hidden items-center gap-2 bg-amber-950/60 px-3 py-1.5 rounded-xl border border-amber-500/40 text-xs">
+        <i class="fa-solid fa-user-shield text-amber-400"></i>
+        <span id="loggedInUserText" class="font-semibold text-amber-200"></span>
+      </div>
+      <button id="authBtn" onclick="openLoginModal()" class="gold-gradient text-red-950 font-bold px-4 py-2 rounded-xl text-sm hover:brightness-110 shadow-md">
+        <i class="fa-solid fa-right-to-bracket mr-1"></i> Login
+      </button>
+    </div>
+  </header>
+
+  <!-- NAVIGATION TABS -->
+  <div class="max-w-6xl mx-auto mb-6 flex flex-wrap gap-2 justify-center" id="tabButtons">
+    <button onclick="switchTab('receiptForm')" id="tab-receiptForm" class="px-5 py-2.5 rounded-xl font-bold text-sm bg-amber-500 text-red-950 shadow-lg flex items-center gap-2">
+      <i class="fa-solid fa-file-invoice"></i> New Receipt
+    </button>
+    <button onclick="switchTab('ledgerView')" id="tab-ledgerView" class="px-5 py-2.5 rounded-xl font-bold text-sm bg-red-950/80 text-amber-300 border border-amber-500/30 flex items-center gap-2">
+      <i class="fa-solid fa-receipt"></i> Receipts Ledger
+    </button>
+    <button id="adminTabBtn" onclick="switchTab('adminPanel')" class="hidden px-5 py-2.5 rounded-xl font-bold text-sm bg-red-950/80 text-amber-300 border border-amber-500/30 items-center gap-2">
+      <i class="fa-solid fa-user-gear"></i> Admin Panel
+    </button>
+  </div>
+
+  <main class="max-w-6xl mx-auto">
+    <!-- NEW RECEIPT FORM -->
+    <section id="receiptForm" class="glass-card rounded-2xl p-6 mb-8">
+      <h2 class="text-xl font-bold font-cinzel text-amber-400 mb-4 pb-2 border-b border-amber-500/20 flex items-center gap-2">
+        <i class="fa-solid fa-pen-nib"></i> Cut New Vargari Receipt
+      </h2>
+      <form id="vargariForm" onsubmit="handleReceiptSubmit(event)" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <label class="block text-xs text-amber-300 mb-1">Donor Full Name (दाता का नाम)*</label>
+          <input type="text" id="donorName" required placeholder="e.g. Rahul Sharma" class="w-full bg-black/40 border border-amber-500/30 rounded-xl p-3 text-sm focus:border-amber-400 outline-none">
+        </div>
+        <div>
+          <label class="block text-xs text-amber-300 mb-1">WhatsApp Mobile Number*</label>
+          <input type="tel" id="donorPhone" required placeholder="e.g. 9876543210" pattern="[0-9]{10}" class="w-full bg-black/40 border border-amber-500/30 rounded-xl p-3 text-sm focus:border-amber-400 outline-none">
+        </div>
+        <div>
+          <label class="block text-xs text-amber-300 mb-1">Amount / राशि (₹)*</label>
+          <input type="number" id="vargariAmount" required min="1" placeholder="e.g. 1100" class="w-full bg-black/40 border border-amber-500/30 rounded-xl p-3 text-sm focus:border-amber-400 outline-none">
+        </div>
+        <div>
+          <label class="block text-xs text-amber-300 mb-1">Payment Mode (भुगतान का प्रकार)*</label>
+          <select id="paymentMode" class="w-full bg-black/40 border border-amber-500/30 rounded-xl p-3 text-sm text-amber-200 outline-none">
+            <option value="Cash">Cash (नकद)</option>
+            <option value="UPI / Online">UPI / PhonePe / GPay</option>
+            <option value="Bank Transfer">Bank Transfer</option>
+          </select>
+        </div>
+        <div class="md:col-span-2">
+          <label class="block text-xs text-amber-300 mb-1">Address / Note (पता / टिप्पणी)</label>
+          <input type="text" id="donorAddress" placeholder="e.g. Surat, Gujarat" class="w-full bg-black/40 border border-amber-500/30 rounded-xl p-3 text-sm focus:border-amber-400 outline-none">
+        </div>
+        <div class="md:col-span-2 pt-2">
+          <button type="submit" class="w-full gold-gradient text-red-950 font-bold py-3.5 rounded-xl text-base shadow-lg hover:brightness-110 transition flex items-center justify-center gap-2">
+            <i class="fa-solid fa-paper-plane"></i> Save & Send Receipt on WhatsApp
+          </button>
+        </div>
+      </form>
+    </section>
+
+    <!-- RECEIPT LEDGER -->
+    <section id="ledgerView" class="glass-card rounded-2xl p-6 hidden">
+      <div class="flex flex-col md:flex-row justify-between items-center gap-4 mb-4 pb-2 border-b border-amber-500/20">
+        <h2 class="text-xl font-bold font-cinzel text-amber-400 flex items-center gap-2">
+          <i class="fa-solid fa-list-check"></i> Live Receipts Ledger
+        </h2>
+        <div class="bg-amber-950/80 border border-amber-500/40 px-4 py-1.5 rounded-xl text-sm font-bold text-amber-300">
+          Total Vargari: <span id="totalCollection" class="text-amber-400">₹0</span>
+        </div>
+      </div>
+      <div class="overflow-x-auto">
+        <table class="w-full text-left text-xs md:text-sm">
+          <thead class="bg-amber-950/80 text-amber-300 uppercase font-cinzel border-b border-amber-500/30">
+            <tr>
+              <th class="p-3">Receipt No</th>
+              <th class="p-3">Donor Name</th>
+              <th class="p-3">Amount</th>
+              <th class="p-3">Mode</th>
+              <th class="p-3">Issued By</th>
+              <th class="p-3 text-center">Action</th>
+            </tr>
+          </thead>
+          <tbody id="ledgerTableBody" class="divide-y divide-amber-500/10">
+            <tr>
+              <td colspan="6" class="p-4 text-center text-amber-200/50">Loading live data from Firebase Realtime DB...</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ADMIN PANEL -->
+    <section id="adminPanel" class="glass-card rounded-2xl p-6 hidden">
+      <h2 class="text-xl font-bold font-cinzel text-amber-400 mb-4 pb-2 border-b border-amber-500/20 flex items-center gap-2">
+        <i class="fa-solid fa-user-plus"></i> Add New Mandal Member (Admin Access)
+      </h2>
+      <form id="addMemberForm" onsubmit="handleAddMember(event)" class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+        <input type="text" id="newMemberName" placeholder="Member Full Name" required class="bg-black/40 border border-amber-500/30 rounded-xl p-3 text-sm">
+        <input type="tel" id="newMemberPhone" placeholder="Mobile / Login ID" pattern="[0-9]{10}" required class="bg-black/40 border border-amber-500/30 rounded-xl p-3 text-sm">
+        <input type="text" id="newMemberPassword" placeholder="Access Password" required class="bg-black/40 border border-amber-500/30 rounded-xl p-3 text-sm">
+        <button type="submit" class="md:col-span-3 gold-gradient text-red-950 font-bold py-2.5 rounded-xl text-sm">
+          <i class="fa-solid fa-plus-circle"></i> Save Member to Live DB
+        </button>
+      </form>
+      <h3 class="font-bold text-amber-300 text-sm mb-2">Registered Active Members:</h3>
+      <div id="membersList" class="space-y-2 text-xs"></div>
+    </section>
+  </main>
+
+  <!-- LOGIN MODAL -->
+  <div id="loginModal" class="fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center p-4 z-50">
+    <div class="glass-card rounded-2xl max-w-md w-full p-6 border-2 border-amber-500">
+      <h2 class="text-xl font-bold font-cinzel text-center gold-text mb-1">MANDAL MEMBER LOGIN</h2>
+      <p class="text-xs text-amber-200/70 text-center mb-4">Master Admin or Registered Member Credentials</p>
+      <form onsubmit="handleLogin(event)" class="space-y-3">
+        <div>
+          <label class="text-xs text-amber-300">Username / Phone Number</label>
+          <input type="text" id="loginUsername" placeholder="e.g. admin or 10-digit phone" required class="w-full bg-black/50 border border-amber-500/40 rounded-xl p-3 text-sm text-amber-100">
+        </div>
+        <div>
+          <label class="text-xs text-amber-300">Password</label>
+          <input type="password" id="loginPassword" placeholder="Password" required class="w-full bg-black/50 border border-amber-500/40 rounded-xl p-3 text-sm text-amber-100">
+        </div>
+        <button type="submit" class="w-full gold-gradient text-red-950 font-bold py-3 rounded-xl text-sm mt-2">
+          Login to Portal
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- FIREBASE REALTIME DATABASE CONFIGURATION & SCRIPT -->
+  <script>
+    // 1. LIVE FIREBASE REALTIME DATABASE CONFIG
+    const firebaseConfig = {
+      databaseURL: "https://brother-hood-devloper-default-rtdb.firebaseio.com/"
+    };
+
+    if (!firebase.apps.length) {
+      firebase.initializeApp(firebaseConfig);
+    }
+    const db = firebase.database();
+
+    // APP STATE & MASTER ADMIN DATA
+    let currentUser = null;
+    let receiptsData = {};
+    let membersData = {};
+
+    const MASTER_ADMIN = {
+      phone: 'admin',
+      password: '!@#$$%^&*()',
+      name: 'Master Admin'
+    };
+
+    // INIT
+    window.onload = function() {
+      listenToFirebaseData();
+      openLoginModal();
+    };
+
+    // REALTIME DATABASE LISTENERS
+    function listenToFirebaseData() {
+      // Sync Receipts
+      db.ref('receipts').on('value', (snapshot) => {
+        receiptsData = snapshot.val() || {};
+        renderLedger();
+      });
+
+      // Sync Members
+      db.ref('members').on('value', (snapshot) => {
+        membersData = snapshot.val() || {};
+        renderMembersList();
+      });
+    }
+
+    // LOGIN & AUTH
+    function openLoginModal() {
+      document.getElementById('loginModal').classList.remove('hidden');
+    }
+
+    function handleLogin(e) {
+      e.preventDefault();
+      const userVal = document.getElementById('loginUsername').value.trim();
+      const passVal = document.getElementById('loginPassword').value.trim();
+
+      // Admin Login Check
+      if (userVal === MASTER_ADMIN.phone && passVal === MASTER_ADMIN.password) {
+        currentUser = { name: 'Master Admin', phone: 'admin', role: 'admin' };
+        onLoginSuccess();
+        return;
+      }
+
+      // Registered Member Check
+      let matchedKey = Object.keys(membersData).find(k => membersData[k].phone === userVal && membersData[k].password === passVal);
+
+      if (matchedKey) {
+        currentUser = { ...membersData[matchedKey], role: 'member' };
+        onLoginSuccess();
+      } else {
+        alert('Invalid Credentials! Aap Admin username/password ya registered member phone number/password ka upayog karein.');
+      }
+    }
+
+    function onLoginSuccess() {
+      document.getElementById('loginModal').classList.add('hidden');
+      document.getElementById('userInfo').classList.remove('hidden');
+      document.getElementById('userInfo').classList.add('flex');
+      document.getElementById('loggedInUserText').innerText = currentUser.name + (currentUser.role === 'admin' ? ' (Admin)' : '');
+      document.getElementById('authBtn').innerHTML = `<i class="fa-solid fa-right-from-bracket mr-1"></i> Logout`;
+      document.getElementById('authBtn').onclick = handleLogout;
+
+      if (currentUser.role === 'admin') {
+        document.getElementById('adminTabBtn').classList.remove('hidden');
+        document.getElementById('adminTabBtn').classList.add('flex');
+      } else {
+        document.getElementById('adminTabBtn').classList.add('hidden');
+      }
+
+      renderLedger();
+    }
+
+    function handleLogout() {
+      currentUser = null;
+      document.getElementById('userInfo').classList.add('hidden');
+      document.getElementById('adminTabBtn').classList.add('hidden');
+      document.getElementById('authBtn').innerHTML = `<i class="fa-solid fa-right-to-bracket mr-1"></i> Login`;
+      document.getElementById('authBtn').onclick = openLoginModal;
+      openLoginModal();
+    }
+
+    // TABS
+    function switchTab(tabId) {
+      ['receiptForm', 'ledgerView', 'adminPanel'].forEach(id => {
+        document.getElementById(id).classList.add('hidden');
+        const btn = document.getElementById('tab-' + id);
+        if (btn) {
+          btn.className = "px-5 py-2.5 rounded-xl font-bold text-sm bg-red-950/80 text-amber-300 border border-amber-500/30 flex items-center gap-2";
+        }
+      });
+      document.getElementById(tabId).classList.remove('hidden');
+      const activeBtn = document.getElementById('tab-' + tabId);
+      if (activeBtn) {
+        activeBtn.className = "px-5 py-2.5 rounded-xl font-bold text-sm bg-amber-500 text-red-950 shadow-lg flex items-center gap-2";
+      }
+    }
+
+    // SUBMIT RECEIPT TO FIREBASE
+    function handleReceiptSubmit(e) {
+      e.preventDefault();
+      if (!currentUser) {
+        alert('Receipt katne ke liye pehele login karein!');
+        openLoginModal();
+        return;
+      }
+
+      const receiptNo = 'AEG-' + Math.floor(100000 + Math.random() * 900000);
+      const name = document.getElementById('donorName').value.trim();
+      const phone = document.getElementById('donorPhone').value.trim();
+      const amount = document.getElementById('vargariAmount').value;
+      const mode = document.getElementById('paymentMode').value;
+      const address = document.getElementById('donorAddress').value || 'Surat';
+
+      const receiptObj = {
+        receiptNo,
+        donorName: name,
+        donorPhone: phone,
+        amount: parseFloat(amount),
+        paymentMode: mode,
+        address: address,
+        issuedByPhone: currentUser.phone,
+        issuedByName: currentUser.name,
+        timestamp: new Date().toLocaleString('en-IN')
+      };
+
+      // Push to Realtime DB
+      db.ref('receipts').push(receiptObj, (err) => {
+        if (!err) {
+          // WhatsApp Text Send
+          const msg = `🚩 *AAKASH EARTH GANPATI YUWA MANDAL* 🚩\n\n` +
+                      `*Vargari Receipt No:* ${receiptNo}\n` +
+                      `*Donor Name:* ${name}\n` +
+                      `*Amount:* ₹${amount}\n` +
+                      `*Payment Mode:* ${mode}\n` +
+                      `*Collector:* ${currentUser.name}\n\n` +
+                      `Aapke sahyog ke liye mandal aapka aabhari hai! Ganpati Bappa Morya! 🙏`;
+
+          window.open(`https://wa.me/91${phone}?text=${encodeURIComponent(msg)}`, '_blank');
+          document.getElementById('vargariForm').reset();
+          switchTab('ledgerView');
+        } else {
+          alert('Error saving data: ' + err.message);
+        }
+      });
+    }
+
+    // RENDER LEDGER & PERMISSIONS
+    function renderLedger() {
+      const tbody = document.getElementById('ledgerTableBody');
+      tbody.innerHTML = '';
+
+      let total = 0;
+      const keys = Object.keys(receiptsData);
+
+      if (keys.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="6" class="p-4 text-center text-amber-200/50">Koi receipt nahi milli. Nayi receipt banayein.</td></tr>`;
+        document.getElementById('totalCollection').innerText = '₹0';
+        return;
+      }
+
+      keys.forEach(key => {
+        const item = receiptsData[key];
+        total += Number(item.amount || 0);
+
+        // Can Edit/Delete check: Admin OR Owner
+        const canModify = currentUser && (currentUser.role === 'admin' || currentUser.phone === item.issuedByPhone);
+
+        const tr = document.createElement('tr');
+        tr.className = "hover:bg-amber-950/30 text-amber-100 border-b border-amber-500/10";
+        tr.innerHTML = `
+          <td class="p-3 font-mono font-bold text-amber-400">${item.receiptNo}</td>
+          <td class="p-3 font-semibold">${item.donorName}<br><span class="text-xs text-amber-200/60">${item.donorPhone}</span></td>
+          <td class="p-3 font-bold text-amber-300">₹${item.amount}</td>
+          <td class="p-3">${item.paymentMode}</td>
+          <td class="p-3">${item.issuedByName}</td>
+          <td class="p-3 text-center">
+            ${canModify ? `
+              <button onclick="deleteReceipt('${key}')" class="bg-red-800/80 hover:bg-red-700 text-white px-2.5 py-1 rounded text-xs transition">
+                <i class="fa-solid fa-trash"></i>
+              </button>
+            ` : `
+              <span class="text-amber-200/30 text-xs"><i class="fa-solid fa-lock"></i> Locked</span>
+            `}
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+
+      document.getElementById('totalCollection').innerText = '₹' + total;
+    }
+
+    // DELETE RECEIPT
+    function deleteReceipt(key) {
+      if (confirm('Kya aap sure hain ki is receipt ko delete karna chahte hain?')) {
+        db.ref('receipts/' + key).remove();
+      }
+    }
+
+    // ADMIN: ADD MEMBER
+    function handleAddMember(e) {
+      e.preventDefault();
+      const name = document.getElementById('newMemberName').value.trim();
+      const phone = document.getElementById('newMemberPhone').value.trim();
+      const password = document.getElementById('newMemberPassword').value.trim();
+
+      db.ref('members').push({ name, phone, password }, (err) => {
+        if (!err) {
+          alert('Member successfully added!');
+          document.getElementById('addMemberForm').reset();
+        }
+      });
+    }
+
+    // ADMIN: LIST MEMBERS
+    function renderMembersList() {
+      const container = document.getElementById('membersList');
+      container.innerHTML = '';
+      Object.keys(membersData).forEach(key => {
+        const m = membersData[key];
+        const div = document.createElement('div');
+        div.className = "flex justify-between items-center bg-black/40 p-2.5 rounded-lg border border-amber-500/20";
+        div.innerHTML = `
+          <div>
+            <span class="font-bold text-amber-300">${m.name}</span> (${m.phone})
+            <span class="text-amber-200/50 block text-[10px]">Pass: ${m.password}</span>
+          </div>
+          <button onclick="deleteMember('${key}')" class="text-red-400 hover:text-red-300 p-1">
+            <i class="fa-solid fa-user-minus"></i>
+          </button>
+        `;
+        container.appendChild(div);
+      });
+    }
+
+    function deleteMember(key) {
+      if (confirm('Kya aap is member ko remove karna chahte hain?')) {
+        db.ref('members/' + key).remove();
+      }
+    }
+  </script>
+</body>
+</html>
